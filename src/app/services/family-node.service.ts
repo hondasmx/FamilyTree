@@ -25,8 +25,8 @@ export class FamilyNodeService {
     const slava2 = new FamilyNode().withName("Slava222").withSibling(father);
     const slava = new FamilyNode().withName("Slava").withSibling(father);
 //    const mother = new FamilyNode().withChild(this.me).withName("Marianna");
-//    const grandMother = new FamilyNode().withChild(father).withName("Musya");
-//    const grandFather = new FamilyNode().withChild(father).withName("Valya").withSpouse(grandMother);
+    const grandMother = new FamilyNode().withChild(father).withName("Musya").withChild(father).withChild(slava).withChild(slava2);
+    const grandFather = new FamilyNode().withChild(father).withName("Valya").withPartner(grandMother).withChild(father).withChild(slava).withChild(slava2);
 //    const grandGFather = new FamilyNode().withChild(mother).withName("Valya");
 //    const grandGMother = new FamilyNode().withChild(mother).withName("Sveta");
 //    this.nodesAddedEvent.next(this.me);
@@ -34,8 +34,8 @@ export class FamilyNodeService {
     this.nodesAddedEvent.next(slava);
     this.nodesAddedEvent.next(slava2);
 //    this.nodesAddedEvent.next(mother);
-//    this.nodesAddedEvent.next(grandFather);
-//    this.nodesAddedEvent.next(grandMother);
+    this.nodesAddedEvent.next(grandFather);
+    this.nodesAddedEvent.next(grandMother);
 //    this.nodesAddedEvent.next(grandGMother);
 //    this.nodesAddedEvent.next(grandGFather);
 

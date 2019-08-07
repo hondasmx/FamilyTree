@@ -6,12 +6,12 @@ class FamilyNode {
     return this._siblings;
   }
 
-  public get spouse(): FamilyNode {
-    return this._spouse;
+  public get partner(): FamilyNode {
+    return this._partner;
   }
 
-  public set spouse( value: FamilyNode ) {
-    this._spouse = value;
+  public set partner( value: FamilyNode ) {
+    this._partner = value;
   }
 
   private _name: string = "Unnamed";
@@ -21,15 +21,21 @@ class FamilyNode {
   private _level: number = 1;
   private _parents: Set<FamilyNode> = new Set<FamilyNode>();
   private _children: Set<FamilyNode> = new Set<FamilyNode>();
-  private _spouse: FamilyNode;
+  private _partner: FamilyNode;
 
   constructor() {
     return this;
   }
 
-  public outLine( down: boolean ): LineCoordinates {
+  /**
+   * true for partners
+   * false for brothers
+   * @param {boolean} partner
+   * @return {LineCoordinates}
+   */
+  public outLine( partner: boolean ): LineCoordinates {
     let center = this.centerLinkCoordinates();
-    let constant = down ? defaultHeight : -defaultHeight;
+    let constant = partner ? defaultHeight : -defaultHeight;
     return {
       x1: center.x,
       y1: center.y,
@@ -38,94 +44,81 @@ class FamilyNode {
     }
   }
 
-  private brotherLines(): LineCoordinates[] {
+  private brotherOrPartnerLines(partner: boolean): LineCoordinates[] {
     let result: LineCoordinates[] = [];
-    const size = this.siblings.size + 1;
-    if (size == 1) return result;
-
-    let thisOutline = this.outLine(false);
+    let thisOutline = this.outLine(partner);
     result.push(thisOutline);
-    const brotherCenterPoint = this.brotherCenterPoint();
+    const centerPoint = this.centerPoint(partner);
     result.push({
       x1: thisOutline.x2,
       y1: thisOutline.y2,
       x2: thisOutline.x2,
-      y2: brotherCenterPoint.y,
+      y2: centerPoint.y,
     });
     result.push({
       x1: thisOutline.x2,
-      y1: brotherCenterPoint.y,
-      x2: brotherCenterPoint.x,
-      y2: brotherCenterPoint.y
+      y1: centerPoint.y,
+      x2: centerPoint.x,
+      y2: centerPoint.y,
     });
     return result;
   }
 
-  private brotherCenterPoint(): SimpleCoordinates {
-    let thisOutline = this.outLine(false);
+  /**
+   * true for partner
+   * false for partners
+   * @param {boolean} partner
+   * @return {SimpleCoordinates}
+   */
+  private centerPoint( partner: boolean ): SimpleCoordinates {
+    let thisOutline = this.outLine(partner);
     const size = this.siblings.size + 1;
     let x = thisOutline.x2;
     let y = thisOutline.y2;
-    this.siblings.forEach(( sibling: FamilyNode ) => {
-      let siblingOutline = sibling.outLine(false);
+    if (partner) {
+      let siblingOutline = this.partner.outLine(partner);
       x += siblingOutline.x2;
-      y = Math.min(siblingOutline.y2, y);
-    });
+      y = Math.max(siblingOutline.y2, y);
+      x = x / 2;
+    } else {
+      this.siblings.forEach(( sibling: FamilyNode ) => {
+        let siblingOutline = sibling.outLine(partner);
+        x += siblingOutline.x2;
+        y = Math.min(siblingOutline.y2, y);
+      });
+      x = x / size;
+    }
 
     return {
-      x: x / size,
+      x: x,
       y: y,
     };
   }
+
   public allLines(): LineCoordinates[] {
     let result: LineCoordinates[] = [];
-    if (this.spouse) {
-      result.push(...this.spouseLines());
+    if (this.partner) {
+      result.push(...this.brotherOrPartnerLines(true));
     }
     if (this.siblings.size > 0) {
-      result.push(...this.brotherLines());
+      result.push(...this.brotherOrPartnerLines(false));
     }
     if (this.parents.size > 0) {
+      const siblingCenterPoint: SimpleCoordinates = this.centerPoint(false);
+      const parentCenterPoint: SimpleCoordinates = this.parents.values().next().value.centerPoint(true)
       result.push({
-        x1: this.spouseCenterPoint().x,
-        y1: this.spouseCenterPoint().y,
-        x2: this.brotherCenterPoint().x,
-        y2: this.brotherCenterPoint().y,
+        x1: siblingCenterPoint.x,
+        y1: siblingCenterPoint.y,
+        x2: siblingCenterPoint.x,
+        y2: parentCenterPoint.y,
       });
+      result.push({
+        x1: siblingCenterPoint.x,
+        y1: parentCenterPoint.y,
+        x2: parentCenterPoint.x,
+        y2: parentCenterPoint.y
+      })
     }
-    return result;
-  }
-
-
-
-  private spouseCenterPoint(): SimpleCoordinates {
-    if (!this.spouse) {
-      return {
-        x: this.x,
-        y: this.y,
-      }
-    }
-    const spouseDownLine = this.spouse.outLine(true);
-    const downLine = this.outLine(true);
-    return {
-      x: (spouseDownLine.x2 + downLine.x2) / 2,
-      y: (spouseDownLine.y2 + downLine.y2) / 2,
-    }
-  }
-
-
-
-  private spouseLines(): LineCoordinates[] {
-    let result: LineCoordinates[] = [];
-    if (!this.spouse) return result;
-    let downLine = this.outLine(true);
-    result.push(downLine);
-    result.push({
-      x1: downLine.x2,
-      y1: downLine.y2,
-      x2: this.spouseCenterPoint().x,
-      y2: this.spouseCenterPoint().y,
-    });
     return result;
   }
 
@@ -194,10 +187,10 @@ class FamilyNode {
     return this;
   }
 
-  public withSpouse( node: FamilyNode ): this {
-    this.spouse = node;
-    if (!node.spouse) {
-      node.withSpouse(this);
+  public withPartner( node: FamilyNode ): this {
+    this.partner = node;
+    if (!node.partner) {
+      node.withPartner(this);
     }
     return this;
   }
@@ -225,7 +218,6 @@ class FamilyNode {
 
 const defaultWidth: number = 15;
 const defaultHeight: number = 10;
-
 
 
 export default FamilyNode;
